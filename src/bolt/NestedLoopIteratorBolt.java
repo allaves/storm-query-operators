@@ -10,7 +10,7 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
-public class NestedLoopJoinBolt implements IRichBolt {
+public class NestedLoopIteratorBolt implements IRichBolt {
 
 	private static final long serialVersionUID = -4826491272348676855L;
 	
