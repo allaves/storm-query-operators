@@ -18,8 +18,8 @@ public class NestedLoopJoinTopology {
 		
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout("testSpout1", new TestSpout());
-		builder.setBolt("timeWindow1", new TimeWindowBolt()).shuffleGrouping("testSpout1");
-		builder.setBolt("timeWindow2", new TimeWindowBolt()).shuffleGrouping("testSpout2");
+		//builder.setBolt("timeWindow1", new TimeWindowBolt()).shuffleGrouping("testSpout1");
+		//builder.setBolt("timeWindow2", new TimeWindowBolt()).shuffleGrouping("testSpout2");
 		builder.setBolt("nestedLoopIterator", new NestedLoopIteratorBolt()).shuffleGrouping("timeWindow1", "timeWindow2");
 		
 		//builder.setBolt("displayObservations", new DisplayHSLVehiclesBolt(), 8).fieldsGrouping("separateFields", new Fields("vehicleId"));
