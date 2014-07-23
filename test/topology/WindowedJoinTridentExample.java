@@ -1,14 +1,14 @@
 package topology;
 
-import state.UpdateJoinState;
-import state.QueryJoinState;
+import state.query.QueryObservationsState;
+import state.query.QuerySensorLocationState;
+import state.update.ObservationsUpdater;
+import state.update.SensorLocationUpdater;
 import storm.trident.Stream;
 import storm.trident.TridentState;
 import storm.trident.TridentTopology;
-import storm.trident.state.StateFactory;
 import storm.trident.testing.FixedBatchSpout;
 import storm.trident.testing.MemoryMapState;
-import trident.memcached.MemcachedState;
 import utils.StreamPrinter;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -25,38 +25,60 @@ public class WindowedJoinTridentExample {
 	public static void main(String[] args) {
 		
 		// This spouts emits the same observations over and over again
-		FixedBatchSpout observationSpout = new FixedBatchSpout(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 5,
-				new Values("obs1", "temperature", 35.0, "degrees Celsius", System.currentTimeMillis(), 1), 
-				new Values("obs2", "temperature", 33.3, "degrees Celsius", System.currentTimeMillis(), 2), 
-				new Values("obs3", "temperature", 34.1, "degrees Celsius", System.currentTimeMillis(), 3),
-				new Values("obs4", "temperature", 35.2, "degrees Celsius", System.currentTimeMillis(), 4),
-				new Values("obs5", "temperature", 31.4, "degrees Celsius", System.currentTimeMillis(), 5));
+		FixedBatchSpout observationSpout = new FixedBatchSpout(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 1,
+				new Values("obs1", "temperature", "35.0", "degrees Celsius", Long.toString(System.currentTimeMillis()), "sensor1"), 
+				new Values("obs2", "temperature", "33.3", "degrees Celsius", Long.toString(System.currentTimeMillis()), "sensor2"), 
+				new Values("obs3", "temperature", "34.1", "degrees Celsius", Long.toString(System.currentTimeMillis()), "sensor3"),
+				new Values("obs4", "temperature", "35.2", "degrees Celsius", Long.toString(System.currentTimeMillis()), "sensor4"),
+				new Values("obs5", "temperature", "31.4", "degrees Celsius", Long.toString(System.currentTimeMillis()), "sensor5"));
 		observationSpout.setCycle(true);
 		
 		// This spouts emits the same sensor locations over and over again
-		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "lat", "lon"), 5, 
-				new Values(1, "40.4055381", "-3.8399521"), 
-				new Values(2, "40.4055382", "-3.8399522"),
-				new Values(3, "40.4055383", "-3.8399523"),
-				new Values(4, "40.4055384", "-3.8399524"),
-				new Values(5, "40.4055385", "-3.8399525"),
-				new Values(6, "40.4055386", "-3.8399526"),
-				new Values(7, "40.4055387", "-3.8399527"));
+		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "lat", "lon"), 1, 
+				new Values("sensor1", "40.4055381", "-3.8399521"), 
+				new Values("sensor2", "40.4055382", "-3.8399522"),
+				new Values("sensor3", "40.4055383", "-3.8399523"),
+				new Values("sensor4", "40.4055384", "-3.8399524"),
+				new Values("sensor5", "40.4055385", "-3.8399525"),
+				new Values("sensor6", "40.4055386", "-3.8399526"),
+				new Values("sensor7", "40.4055387", "-3.8399527"));
 		sensorSpout.setCycle(true);
 		
 		// Topology, state, and streams definition
 		TridentTopology tridentTopology = new TridentTopology();
-		Stream observationStream = tridentTopology.newStream("observationStream", observationSpout);
 		Stream sensorStream = tridentTopology.newStream("sensorStream", sensorSpout);
 		
 		// Windowed join with partitionPersist and MemoryMapState
-		TridentState windowedJoin = observationStream.partitionPersist(new MemoryMapState.Factory(), 
-				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 
-				new UpdateJoinState());
+		TridentState sensorLocations = sensorStream.partitionPersist(new MemoryMapState.Factory(), 
+				new Fields("sensorId", "lat", "lon"), 
+				new SensorLocationUpdater());
+		
+		tridentTopology.newStream("observationStream", observationSpout).
+		stateQuery(sensorLocations, new Fields("sensorId"), 
+				new QuerySensorLocationState(), 
+				new Fields("lat", "lon")).
+				each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "lat", "lon"), 
+						new StreamPrinter(), 
+						new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "lat2", "lon2"));
 
-				
+
+//		partitionPersist(new MemoryMapState.Factory(), 
+//				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 
+//				new ObservationsUpdater())
+
+		
+		
+//		sensorStream.stateQuery(sensorLocations, 
+//				new Fields("sensorId"), new QuerySensorLocationState(), new Fields("lat2", "lon2")).
+//		stateQuery(observations, new Fields("obsId"), 
+//				new QueryObservationsState(), 
+//				new Fields("observedProperty", "value", "uom", "timestamp", "sensorId")).
+//				each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "lat", "lon"), 
+//						new StreamPrinter(), 
+//						new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "lat2", "lon2"));
 		
 		Config conf = new Config();
+		conf.setNumWorkers(3);
 	    conf.setDebug(true);
 		
 		LocalCluster cluster = new LocalCluster();
