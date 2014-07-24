@@ -1,5 +1,7 @@
 package topology;
 
+import java.util.HashMap;
+
 import state.query.QueryObservationsState;
 import state.query.QuerySensorLocationState;
 import state.update.ObservationsUpdater;
@@ -7,6 +9,9 @@ import state.update.SensorLocationUpdater;
 import storm.trident.Stream;
 import storm.trident.TridentState;
 import storm.trident.TridentTopology;
+import storm.trident.state.State;
+import storm.trident.state.StateFactory;
+import storm.trident.state.map.MapState;
 import storm.trident.testing.FixedBatchSpout;
 import storm.trident.testing.MemoryMapState;
 import utils.StreamPrinter;
@@ -34,37 +39,46 @@ public class WindowedJoinTridentExample {
 		observationSpout.setCycle(true);
 		
 		// This spouts emits the same sensor locations over and over again
-		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "lat", "lon"), 1, 
-				new Values("sensor1", "40.4055381", "-3.8399521"), 
-				new Values("sensor2", "40.4055382", "-3.8399522"),
-				new Values("sensor3", "40.4055383", "-3.8399523"),
-				new Values("sensor4", "40.4055384", "-3.8399524"),
-				new Values("sensor5", "40.4055385", "-3.8399525"),
-				new Values("sensor6", "40.4055386", "-3.8399526"),
-				new Values("sensor7", "40.4055387", "-3.8399527"));
+		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "latlon"), 1, 
+				new Values("sensor1", "40.4055381 -3.8399521"), 
+				new Values("sensor2", "40.4055382 -3.8399522"),
+				new Values("sensor3", "40.4055383 -3.8399523"),
+				new Values("sensor4", "40.4055384 -3.8399524"),
+				new Values("sensor5", "40.4055385 -3.8399525"),
+				new Values("sensor6", "40.4055386 -3.8399526"),
+				new Values("sensor7", "40.4055387 -3.8399527"));
 		sensorSpout.setCycle(true);
 		
 		// Topology, state, and streams definition
 		TridentTopology tridentTopology = new TridentTopology();
-		Stream sensorStream = tridentTopology.newStream("sensorStream", sensorSpout);
 		
 		// Windowed join with partitionPersist and MemoryMapState
-		TridentState sensorLocations = sensorStream.partitionPersist(new MemoryMapState.Factory(), 
-				new Fields("sensorId", "lat", "lon"), 
-				new SensorLocationUpdater());
+		// TridentState with MemoryMapState
+//		TridentState sensorLocationsState = tridentTopology.newStaticState(new MemoryMapState.Factory());
+				
+		StateFactory stateFactory = new MemoryMapState.Factory();
+		stateFactory.makeState(new HashMap(), null, 0, 0);
+		
+		TridentState sensorLocationsState = tridentTopology.newStream("sensorStream", sensorSpout).
+				partitionPersist(new MemoryMapState.Factory(), 
+						new Fields("sensorId", "latlon"), 
+						new SensorLocationUpdater());
+		
 		
 		tridentTopology.newStream("observationStream", observationSpout).
-		stateQuery(sensorLocations, new Fields("sensorId"), 
-				new QuerySensorLocationState(), 
-				new Fields("lat", "lon")).
-				each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "lat", "lon"), 
-						new StreamPrinter(), 
-						new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "lat2", "lon2"));
-
+				stateQuery(sensorLocationsState, new Fields("sensorId"), 
+						new QuerySensorLocationState(), 
+						new Fields("location")).
+						each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "location"), 
+								new StreamPrinter(), 
+								new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "location2"));
 
 //		partitionPersist(new MemoryMapState.Factory(), 
 //				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 
-//				new ObservationsUpdater())
+//				new ObservationsUpdater(), 
+//				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId")).
+//				newValuesStream().
+		
 
 		
 		

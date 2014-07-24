@@ -10,7 +10,7 @@ public class StreamPrinter extends BaseFunction {
 
 	@Override
 	public void execute(TridentTuple tuple, TridentCollector collector) {
-		System.out.println("Joined tuple: " + tuple.toString());
+		System.out.println("PRINTED STREAM: " + tuple.toString());
 		collector.emit(tuple);
 	}
 

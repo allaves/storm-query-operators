@@ -36,8 +36,11 @@ public class ObservationsUpdater extends BaseStateUpdater<MemoryMapState<Object>
 			aux.put("sensorId", tuple.getStringByField("sensorId"));
 			values.add(aux);
 			aux.clear();
+			
 		}
 		state.multiPut(Arrays.asList(observationIds), values);
+		// Tuples emitted to the collector go through the newValuesStream call
+		collector.emit(values);
 	}
 
 }
