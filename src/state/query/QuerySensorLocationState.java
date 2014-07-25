@@ -15,7 +15,7 @@ import utils.LatLon;
 /*
  * Query function for the sensor location state
  */
-public class QuerySensorLocationState extends BaseQueryFunction<MemoryMapState<String>, String> {
+public class QuerySensorLocationState extends BaseQueryFunction<MemoryMapState<LatLon<String>>, LatLon<String>> {
 
 	private static final long serialVersionUID = -5685780054277151569L;
 	
@@ -25,22 +25,20 @@ public class QuerySensorLocationState extends BaseQueryFunction<MemoryMapState<S
 	 * @see storm.trident.state.QueryFunction#batchRetrieve(storm.trident.state.State, java.util.List)
 	 */
 	@Override
-	public List<String> batchRetrieve(MemoryMapState<String> state, List<TridentTuple> tuples) {
+	public List<LatLon<String>> batchRetrieve(MemoryMapState<LatLon<String>> state, List<TridentTuple> tuples) {
 		List<Object> sensorIds = new ArrayList<Object>();
-		//List<String> locations = new ArrayList<String>();
 		for (TridentTuple tuple : tuples) {
 			sensorIds.add(tuple.getString(0));
-			//locations.add(state.);
 		}
 		return state.multiGet(Arrays.asList(sensorIds));
-		//return locations;
 	}
 
 	
 	@Override
-	public void execute(TridentTuple tuple, String location, TridentCollector collector) {
-		// result is NULL!
-		collector.emit(new Values(location));
+	public void execute(TridentTuple tuple, LatLon<String> location, TridentCollector collector) {
+		if (location != null) {
+			collector.emit(new Values(location.getLat(), location.getLon()));
+		}
 	}
 
 }

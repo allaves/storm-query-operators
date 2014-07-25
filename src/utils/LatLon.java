@@ -1,23 +1,22 @@
 package utils;
 
-import storm.trident.state.ValueUpdater;
 
-public class LatLon<Lat, Lon> {
+public class LatLon<T> {
     
-	private Lat lat;
-    private Lon lon;
+	private T lat;
+    private T lon;
     
-    public LatLon(Lat lat, Lon lon){
+    public LatLon(T lat, T lon){
         this.lat = lat;
         this.lon = lon;
     }
     
-    public Lat getLat(){ return lat; }
+    public T getLat(){ return lat; }
     
-    public Lon getLon(){ return lon; }
+    public T getLon(){ return lon; }
     
-    public void setLat(Lat lat){ this.lat = lat; }
+    public void setLat(T lat){ this.lat = lat; }
     
-    public void setLon(Lon lon){ this.lon = lon; }
+    public void setLon(T lon){ this.lon = lon; }
 
 }
