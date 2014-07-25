@@ -53,18 +53,13 @@ public class WindowedJoinTridentExample {
 		TridentTopology tridentTopology = new TridentTopology();
 		
 		// Windowed join with partitionPersist and MemoryMapState
-		// TridentState with MemoryMapState
-//		TridentState sensorLocationsState = tridentTopology.newStaticState(new MemoryMapState.Factory());
-				
-		StateFactory stateFactory = new MemoryMapState.Factory();
-		stateFactory.makeState(new HashMap(), null, 0, 0);
-		
+		// Persisted trident state for sensor locations (with MemoryMapState and partitionPersist)
 		TridentState sensorLocationsState = tridentTopology.newStream("sensorStream", sensorSpout).
 				partitionPersist(new MemoryMapState.Factory(), 
 						new Fields("sensorId", "latlon"), 
 						new SensorLocationUpdater());
 		
-		
+		// Trident stream for observations that query the persisted state for sensor locations using stateQuery
 		tridentTopology.newStream("observationStream", observationSpout).
 				stateQuery(sensorLocationsState, new Fields("sensorId"), 
 						new QuerySensorLocationState(), 
@@ -72,12 +67,6 @@ public class WindowedJoinTridentExample {
 						each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "location"), 
 								new StreamPrinter(), 
 								new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "location2"));
-
-//		partitionPersist(new MemoryMapState.Factory(), 
-//				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId"), 
-//				new ObservationsUpdater(), 
-//				new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId")).
-//				newValuesStream().
 		
 
 		

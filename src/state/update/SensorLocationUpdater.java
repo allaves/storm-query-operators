@@ -13,7 +13,7 @@ import utils.LatLon;
 /*
  * Updates the state with the location of the sensors
  */
-public class SensorLocationUpdater extends BaseStateUpdater<MemoryMapState> {
+public class SensorLocationUpdater extends BaseStateUpdater<MemoryMapState<String>> {
 
 	private static final long serialVersionUID = -3382077897620826620L;
 
@@ -24,9 +24,9 @@ public class SensorLocationUpdater extends BaseStateUpdater<MemoryMapState> {
 	 * storm.trident.operation.TridentCollector)
 	 */
 	@Override
-	public void updateState(MemoryMapState state, List<TridentTuple> tuples, TridentCollector collector) {
-		List sensorIds = new ArrayList();
-		List locations = new ArrayList();
+	public void updateState(MemoryMapState<String> state, List<TridentTuple> tuples, TridentCollector collector) {
+		List<Object> sensorIds = new ArrayList<Object>();
+		List<String> locations = new ArrayList<String>();
 		for (TridentTuple tuple : tuples) {
 			sensorIds.add(tuple.getString(0));
 			locations.add(tuple.getString(1));
