@@ -13,6 +13,12 @@ public class RabbitMQSpout extends BaseRichSpout {
 
 	private static final long serialVersionUID = -4386064122079596842L;
 
+	private int timeWindowInSeconds;
+	
+	public RabbitMQSpout(int timeWindowInSeconds) {
+		this.timeWindowInSeconds = timeWindowInSeconds;
+	}
+	
 	@Override
 	public void open(Map conf, TopologyContext context,	SpoutOutputCollector collector) {
 		// TODO Auto-generated method stub
@@ -28,13 +34,12 @@ public class RabbitMQSpout extends BaseRichSpout {
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declare(new Fields(""));
-		
 	}
 	
+	@Override
 	public Map<String, Object> getComponentConfiguration() {
 		Config conf = new Config();
-		int timePeriodInSeconds = 10;
-		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, timePeriodInSeconds);
+		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, timeWindowInSeconds);
 		return conf;
 	}
 

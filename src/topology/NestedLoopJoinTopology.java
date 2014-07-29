@@ -1,6 +1,6 @@
 package topology;
 
-import spout.TestSpout;
+import spout.RDFStreamSpout;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
@@ -17,7 +17,7 @@ public class NestedLoopJoinTopology {
 		//FeederSpout testSpout
 		
 		TopologyBuilder builder = new TopologyBuilder();
-		builder.setSpout("testSpout1", new TestSpout());
+		//builder.setSpout("testSpout1", new RDFStreamSpout());
 		//builder.setBolt("timeWindow1", new TimeWindowBolt()).shuffleGrouping("testSpout1");
 		//builder.setBolt("timeWindow2", new TimeWindowBolt()).shuffleGrouping("testSpout2");
 		builder.setBolt("nestedLoopIterator", new NestedLoopIteratorBolt()).shuffleGrouping("timeWindow1", "timeWindow2");
