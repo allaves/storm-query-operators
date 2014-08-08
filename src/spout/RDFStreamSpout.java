@@ -1,15 +1,21 @@
 package spout;
 
+import java.io.BufferedReader;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.jena.atlas.lib.Sink;
+import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.lang.PipedRDFIterator;
 import org.apache.jena.riot.lang.PipedRDFStream;
 import org.apache.jena.riot.lang.PipedTriplesStream;
-
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.riot.out.NodeToLabel;
+import org.apache.jena.riot.out.SinkTripleOutput;
+import org.apache.jena.riot.stream.StreamManager;
+import org.apache.jena.riot.system.StreamRDF;
+import org.apache.jena.riot.system.SyntaxLabels;
 
 import backtype.storm.Config;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -19,6 +25,10 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
+
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 
 /*
  * Spout for RDF streams
@@ -31,7 +41,7 @@ public class RDFStreamSpout extends BaseRichSpout {
 	private String filePath;
 	private int timeWindowInSeconds;
 	private SpoutOutputCollector collector;
-	private PipedRDFIterator<Triple> iterator;
+	private PipedRDFIterator<Triple> iterator; 
 	
 	public RDFStreamSpout(String filePath, int timeWindowInSeconds) {
 		this.filePath = filePath;
@@ -42,37 +52,37 @@ public class RDFStreamSpout extends BaseRichSpout {
 	public void open(Map conf, TopologyContext context,	SpoutOutputCollector collector) {
 		this.collector = collector;
 		
-		// Create an RDF stream and an iterator
+		//Sink<Triple> output = new SinkTripleOutput(System.out, null, SyntaxLabels.createNodeToLabel());
 		iterator = new PipedRDFIterator<Triple>();
-		final PipedRDFStream<Triple> inputStream = new PipedTriplesStream(iterator);
-		
-		// PipedRDFStream and PipedRDFIterator need to be in different threads to avoid deadlocks
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		
-		// Runnable for the parser thread
-		Runnable parser = new Runnable() {
+        final PipedRDFStream<Triple> inputStream = new PipedTriplesStream(iterator);
 
-			@Override
-			public void run() {
-				// Parsing process
-				RDFDataMgr.parse(inputStream, filePath);
-			}
-		};
-		
-		// Start the parser on a different thread
-		executor.submit(parser);
+		// PipedRDFStream and PipedRDFIterator need to be on different threads
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        // Create a runnable for our parser thread
+        Runnable parser = new Runnable() {
+
+            @Override
+            public void run() {
+                // Call the parsing process.
+                RDFDataMgr.parse(inputStream, filePath, Lang.TURTLE);
+            }
+        };
+
+        // Start the parser on another thread
+        executor.submit(parser);
 	}
 
 	@Override
 	public void nextTuple() {
 		// Time between triple emission
-		Utils.sleep(1000);
-		
-		// Iterate over the data
-		while (iterator.hasNext()) {
+		Utils.sleep(1);
+		if (iterator.hasNext()) {
 			Triple next = iterator.next();
-			collector.emit(new Values(next));
+			collector.emit(new Values(next.toString()));
 		}
+		
+		
 	}
 
 	

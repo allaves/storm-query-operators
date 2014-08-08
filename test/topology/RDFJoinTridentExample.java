@@ -37,7 +37,7 @@ public class RDFJoinTridentExample {
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
 		
-		String fileName = "/data/Earthquakes-Spain-2013.ttl";
+		String fileName = "data/Earthquakes-Spain-2013.ttl";
 		int timeWindowInSeconds = 30;
 		
 		// Emits RDF triples from a file
@@ -77,7 +77,7 @@ public class RDFJoinTridentExample {
 		
 	    cluster.submitTopology("RDFStreamJoinExample", conf, tridentTopology.build());
 	    
-	    Utils.sleep(10000);
+	    Utils.sleep(100000);
 	    cluster.shutdown();
 	}
 }
