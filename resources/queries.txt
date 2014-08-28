@@ -1,0 +1,37 @@
+# Get the magnitude of the earthquakes observed in an hour 
+PREFIX ssn: <http://purl.oclc.org/NET/ssnx/ssn#>
+PREFIX dul: <http://www.loa-cnr.it/ontologies/DUL.owl#>
+PREFIX sweet: <http://sweet.jpl.nasa.gov/2.2/sweetAll.owl#>
+
+SELECT DISTINCT ?observation ?value
+FROM NAMED STREAM <...> [NOW - 1 HOURS]
+WHERE {
+  ?observation ssn:observedProperty ?magnitude ;
+               a ssn:Observation ;
+               ssn:observationResult ?output .
+  ?magnitude a sweet:EarthquakeScale .
+  ?output ssn:hasValue ?obsValue .
+  ?obsValue dul:hasDataValue ?value .
+}
+
+
+# Get the magnitude, timestamp and location of the earthquakes observed in an hour 
+PREFIX ssn: <http://purl.oclc.org/NET/ssnx/ssn#>
+PREFIX dul: <http://www.loa-cnr.it/ontologies/DUL.owl#>
+PREFIX sweet: <http://sweet.jpl.nasa.gov/2.2/sweetAll.owl#>
+PREFIX geosparql: <http://www.opengis.net/ont/geosparql#>
+
+SELECT DISTINCT ?observation ?value ?timestamp ?location
+FROM NAMED STREAM <...> [NOW - 1 HOURS]
+WHERE {
+  ?observation ssn:observedProperty ?magnitude ;
+               a ssn:Observation ;
+               geosparql:hasGeometry ?geom ;
+               ssn:observationResult ?output ;
+               ssn:observationSamplingTime ?time .
+  ?magnitude a sweet:EarthquakeScale .
+  ?geom geosparql:asWKT ?location .
+  ?time time:inXSDDateTime ?timestamp .
+  ?output ssn:hasValue ?obsValue .
+  ?obsValue dul:hasDataValue ?value .
+}

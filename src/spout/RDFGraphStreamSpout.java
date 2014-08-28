@@ -31,20 +31,22 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 
 /*
- * Spout for RDF streams
+ * Spout for streams of RDF Graphs
  * Input source: file
  * Based on https://svn.apache.org/repos/asf/jena/trunk/jena-arq/src-examples/arq/examples/riot/ExRIOT_6.java
  */
-public class RDFStreamSpout extends BaseRichSpout {
+public class RDFGraphStreamSpout extends BaseRichSpout {
 
 	private static final long serialVersionUID = 8966458505147153573L;
 	
 	private String filePath;
+	private int timeWindowInSeconds;
 	private SpoutOutputCollector collector;
 	private PipedRDFIterator<Triple> iterator; 
 	
-	public RDFStreamSpout(String filePath) {
+	public RDFGraphStreamSpout(String filePath, int timeWindowInSeconds) {
 		this.filePath = filePath;
+		this.timeWindowInSeconds = timeWindowInSeconds;
 	}
 
 	@Override
@@ -78,8 +80,7 @@ public class RDFStreamSpout extends BaseRichSpout {
 		Utils.sleep(1);
 		if (iterator.hasNext()) {
 			Triple next = iterator.next();
-			// Cannot remove the '@' from the predicate
-			collector.emit(new Values(next.getSubject().toString(), next.getPredicate().toString(), next.getObject().toString()));
+			collector.emit(new Values(next.toString()));
 		}
 		
 		
@@ -88,14 +89,14 @@ public class RDFStreamSpout extends BaseRichSpout {
 	
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("s", "p", "o"));
+		declarer.declare(new Fields("triples"));
 	}
 
-//	@Override
-//	public Map<String, Object> getComponentConfiguration() {
-//		Config conf = new Config();
-//		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, timeWindowInSeconds);
-//		return conf;
-//	}
+	@Override
+	public Map<String, Object> getComponentConfiguration() {
+		Config conf = new Config();
+		conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, timeWindowInSeconds);
+		return conf;
+	}
 
 }
