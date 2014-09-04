@@ -75,7 +75,7 @@ public class RDFStreamSpout extends BaseRichSpout {
 	@Override
 	public void nextTuple() {
 		// Time between triple emission
-		Utils.sleep(1);
+		Utils.sleep(100);
 		if (iterator.hasNext()) {
 			Triple next = iterator.next();
 			// Cannot remove the '@' from the predicate

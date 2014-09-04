@@ -1,9 +1,12 @@
 package state.query;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import backtype.storm.Constants;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 import com.hp.hpl.jena.graph.Graph;
 
@@ -16,28 +19,29 @@ public class QueryEarthquakeObsState extends BaseQueryFunction<MemoryMapState<Gr
 
 	private static final long serialVersionUID = -3217320295548857585L;
 
+	private int timeWindowInSeconds;
+	private long currentTimestamp;
+	
+	public QueryEarthquakeObsState(int timeWindowInSeconds) {
+		this.timeWindowInSeconds = timeWindowInSeconds;
+		this.currentTimestamp = System.currentTimeMillis();
+	}
+	
 	@Override
-	public List<Graph> batchRetrieve(MemoryMapState<Graph> state,
-			List<TridentTuple> args) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Graph> batchRetrieve(MemoryMapState<Graph> state, List<TridentTuple> tuples) {
+		List<String> ids = new ArrayList<String>();
+		for (TridentTuple tuple : tuples) {
+			ids.add(tuple.getString(0));
+		}
+		return state.multiGet(Arrays.asList(graphs));
 	}
 
 	@Override
 	public void execute(TridentTuple tuple, Graph result, TridentCollector collector) {
-		if (isTickTuple(tuple)) {
-			// Query
-			
+		if (result != null) {
+			collector.emit(new Values(result));
+			System.out.println("GRAPH EMITTED!");
 		}
-	}
-
-	/*
-	 * Returns true if the argument is a tick tuple and false otherwise
-	 */
-	private boolean isTickTuple(Tuple tuple) {
-		return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID) &&
-				tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
-	}
 	}
 
 }

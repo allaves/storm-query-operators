@@ -20,17 +20,29 @@ import utils.LatLon;
 public class EarthquakeObsUpdater extends BaseStateUpdater<MemoryMapState<Object>> {
 
 	private static final long serialVersionUID = 964509701435526966L;
+	
+	private int timeWindowInSeconds;
+	
+	public EarthquakeObsUpdater(int timeWindowInSeconds) {
+		this.timeWindowInSeconds = timeWindowInSeconds;
+	}
 
+	/*
+	 * Takes the first tuple of the batch and checks the timestamp t0.
+	 * It stores tuples into a state while the timestamp is within [t0 AND t0+timeWindowInSeconds]
+	 * When the timestamp tn of a tuple does not match this condition, THEN t0 = tn, and the previous state is overwritten with new tuples.
+	 * (non-Javadoc)
+	 * @see storm.trident.state.StateUpdater#updateState(storm.trident.state.State, java.util.List, storm.trident.operation.TridentCollector)
+	 */
 	@Override
 	public void updateState(MemoryMapState<Object> state, List<TridentTuple> tuples, TridentCollector collector) {
-		List<Object> names = new ArrayList<Object>();
-		//List<Object> timestamps = new ArrayList<Object>();
+		List<Object> ids = new ArrayList<Object>();
 		List<Object> earthquakeGraphs = new ArrayList<Object>();
 		for (TridentTuple tuple : tuples) {
-			names.add(tuple.get(0));
-			earthquakeGraphs.add(tuple.get(1));
+			ids.add((String)tuple.get(0) + (String)tuple.get(1));
+			earthquakeGraphs.add(tuple.get(2));
 		}
-		state.multiPut(Arrays.asList(names), earthquakeGraphs);
+		state.multiPut(Arrays.asList(ids), earthquakeGraphs);
 		
 		// Tuples emitted to the collector go through the newValuesStream call
 		//collector.emit(state.multiGet(Arrays.asList(sensorIds)));
