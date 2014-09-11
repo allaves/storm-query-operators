@@ -1,11 +1,13 @@
-package topology;
+package topology.trident;
 
 import java.util.HashMap;
 
 import state.query.QueryObservationsState;
 import state.query.QuerySensorLocationState;
+import state.query.SimpleQuerySensorLocationState;
 import state.update.ObservationsUpdater;
 import state.update.SensorLocationUpdater;
+import state.update.SimpleSensorLocationUpdater;
 import storm.trident.Stream;
 import storm.trident.TridentState;
 import storm.trident.TridentTopology;
@@ -24,7 +26,7 @@ import backtype.storm.utils.Utils;
 /*
  * Trident example for windowed join 
  */
-public class WindowedJoinTridentExampleLatLon {
+public class WindowedJoinTridentExample {
 	
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
@@ -39,14 +41,14 @@ public class WindowedJoinTridentExampleLatLon {
 		observationSpout.setCycle(true);
 		
 		// This spouts emits the same sensor locations over and over again
-		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "lat", "lon"), 1, 
-				new Values("sensor1", "40.4055381", "-3.8399521"), 
-				new Values("sensor2", "40.4055382", "-3.8399522"),
-				new Values("sensor3", "40.4055383", "-3.8399523"),
-				new Values("sensor4", "40.4055384", "-3.8399524"),
-				new Values("sensor5", "40.4055385", "-3.8399525"),
-				new Values("sensor6", "40.4055386", "-3.8399526"),
-				new Values("sensor7", "40.4055387", "-3.8399527"));
+		FixedBatchSpout sensorSpout = new FixedBatchSpout(new Fields("sensorId", "latlon"), 1, 
+				new Values("sensor1", "40.4055381 -3.8399521"), 
+				new Values("sensor2", "40.4055382 -3.8399522"),
+				new Values("sensor3", "40.4055383 -3.8399523"),
+				new Values("sensor4", "40.4055384 -3.8399524"),
+				new Values("sensor5", "40.4055385 -3.8399525"),
+				new Values("sensor6", "40.4055386 -3.8399526"),
+				new Values("sensor7", "40.4055387 -3.8399527"));
 		sensorSpout.setCycle(true);
 		
 		// Topology, state, and streams definition
@@ -56,18 +58,18 @@ public class WindowedJoinTridentExampleLatLon {
 		// Persisted trident state for sensor locations (with MemoryMapState and partitionPersist)
 		TridentState sensorLocationsState = tridentTopology.newStream("sensorStream", sensorSpout).
 				partitionPersist(new MemoryMapState.Factory(), 
-						new Fields("sensorId", "lat", "lon"), 
-						new SensorLocationUpdater());
+						new Fields("sensorId", "latlon"), 
+						new SimpleSensorLocationUpdater());
 		
 		// Trident stream for observations that query the persisted state for sensor locations using stateQuery
 		// Join results are shown as prints (PRINTED STREAM:...) 
 		tridentTopology.newStream("observationStream", observationSpout).
 				stateQuery(sensorLocationsState, new Fields("sensorId"), 
-						new QuerySensorLocationState(), 
-						new Fields("lat", "lon")).
-						each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "lat", "lon"), 
+						new SimpleQuerySensorLocationState(), 
+						new Fields("location")).
+						each(new Fields("obsId", "observedProperty", "value", "uom", "timestamp", "sensorId", "location"), 
 								new StreamPrinter(), 
-								new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "lat2", "lon2"));
+								new Fields("obsId2", "observedProperty2", "value2", "uom2", "timestamp2", "sensorId2", "location2"));
 		
 		Config conf = new Config();
 		conf.setNumWorkers(3);			// Random number

@@ -1,5 +1,6 @@
-package topology;
+package topology.storm;
 
+import storm.starter.bolt.PrinterBolt;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.testing.FeederSpout;
@@ -7,7 +8,7 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-import bolt.SingleJoinBolt;
+import bolt.SimpleJoinBolt;
 
 /*
  * Source: storm-starter project
@@ -21,8 +22,9 @@ public class SingleJoinExample {
     TopologyBuilder builder = new TopologyBuilder();
     builder.setSpout("gender", genderSpout);
     builder.setSpout("age", ageSpout);
-    builder.setBolt("join", new SingleJoinBolt(new Fields("gender", "age"))).fieldsGrouping("gender", new Fields("id"))
+    builder.setBolt("join", new SimpleJoinBolt(new Fields("gender", "age"))).fieldsGrouping("gender", new Fields("id"))
         .fieldsGrouping("age", new Fields("id"));
+    builder.setBolt("printer", new PrinterBolt()).shuffleGrouping("join");
 
     Config conf = new Config();
     conf.setDebug(true);

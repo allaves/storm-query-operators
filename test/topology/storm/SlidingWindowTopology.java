@@ -1,4 +1,4 @@
-package topology;
+package topology.storm;
 
 import spout.RDFStreamSpout;
 import storm.starter.bolt.IntermediateRankingsBolt;
@@ -11,12 +11,13 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import bolt.AckerPrinterBolt;
 import bolt.GraphPrinterBolt;
+import bolt.RollingWindowBolt;
 import bolt.Triple2GraphBolt;
 
 /*
  * This topology counts how many different graphs appear in 15-seconds windows. Results are emitted every 3 seconds. 
  */
-public class GraphCounterTopology {
+public class SlidingWindowTopology {
 	
 	private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
 	private static final int TOP_N = 5;
@@ -26,7 +27,7 @@ public class GraphCounterTopology {
 	private Config topologyConfig;
 	private int runtimeInSeconds;
 	
-	public GraphCounterTopology() {
+	public SlidingWindowTopology() {
 		builder = new TopologyBuilder();
 		topologyName = "graphCounterTopology";
 		topologyConfig = createTopologyConfiguration();
@@ -40,13 +41,13 @@ public class GraphCounterTopology {
 		String fileName = "data/Earthquakes-Spain-2013.ttl";
 		String spoutId = "rdfStreamSpout";
 		String triple2graph = "triple2graph";
-		String graphCounter = "graphCounter";
-		String finalCounter = "finalCounter";
+		String graphWindow = "graphWindow";
+		String finalBolt = "finalBolt";
 		
 		builder.setSpout(spoutId, new RDFStreamSpout(fileName));
-		builder.setBolt(triple2graph, new Triple2GraphBolt()).shuffleGrouping(spoutId);
-		builder.setBolt(graphCounter, new RollingCountBolt(15, 3)).fieldsGrouping(triple2graph, new Fields("name"));
-		builder.setBolt(finalCounter, new AckerPrinterBolt()).globalGrouping(graphCounter);
+		builder.setBolt(triple2graph, new Triple2GraphBolt()).globalGrouping(spoutId);
+		builder.setBolt(graphWindow, new RollingWindowBolt(15, 3)).globalGrouping(triple2graph);
+		builder.setBolt(finalBolt, new AckerPrinterBolt()).globalGrouping(graphWindow);
 	}
 
 	private Config createTopologyConfiguration() {
@@ -60,7 +61,7 @@ public class GraphCounterTopology {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		new GraphCounterTopology().run();
+		new SlidingWindowTopology().run();
 	}
 
 }

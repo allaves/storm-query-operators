@@ -8,19 +8,24 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+
 import org.apache.log4j.Logger;
+
 import storm.starter.tools.NthLastModifiedTimeTracker;
 import storm.starter.tools.SlidingWindowCounter;
 import storm.starter.util.TupleHelpers;
+import utils.SlidingWindow;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 /**
  * Based on https://github.com/nathanmarz/storm-starter/blob/master/src/jvm/storm/starter/bolt/RollingCountBolt.java
  */
-public class RollingWindowBolt extends BaseRichBolt {
+public class RollingWindowBolt<T> extends BaseRichBolt {
 
   private static final long serialVersionUID = 1761364280293026138L;
   
@@ -32,7 +37,7 @@ public class RollingWindowBolt extends BaseRichBolt {
       "Actual window length is %d seconds when it should be %d seconds"
           + " (you can safely ignore this warning during the startup phase)";
 
-  private final SlidingWindower<Object> counter;
+  private final SlidingWindow<T> window;
   private final int windowLengthInSeconds;
   private final int emitFrequencyInSeconds;
   private OutputCollector collector;
@@ -45,8 +50,7 @@ public class RollingWindowBolt extends BaseRichBolt {
   public RollingWindowBolt(int windowLengthInSeconds, int emitFrequencyInSeconds) {
     this.windowLengthInSeconds = windowLengthInSeconds;
     this.emitFrequencyInSeconds = emitFrequencyInSeconds;
-    counter = new SlidingWindowCounter<Object>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
-        this.emitFrequencyInSeconds));
+    window = new SlidingWindow<T>(deriveNumWindowChunksFrom(this.windowLengthInSeconds, this.emitFrequencyInSeconds));
   }
 
   private int deriveNumWindowChunksFrom(int windowLengthInSeconds, int windowUpdateFrequencyInSeconds) {
@@ -65,40 +69,51 @@ public class RollingWindowBolt extends BaseRichBolt {
   public void execute(Tuple tuple) {
     if (TupleHelpers.isTickTuple(tuple)) {
       LOG.debug("Received tick tuple, triggering emit of current window counts");
-      emitCurrentWindowCounts();
+      //emitCurrentWindowCounts();
+      emitCurrentWindowSlot();
     }
     else {
-      countObjAndAck(tuple);
+      //countObjAndAck(tuple);
+    	ackObject(tuple);
     }
   }
 
-  private void emitCurrentWindowCounts() {
-    Map<Object, Long> counts = counter.getCountsThenAdvanceWindow();
+  private void emitCurrentWindowSlot() {
+    Map<Integer, List<T>> slots = window.getSlotsThenAdvanceWindow();
+    List<T> tupleList = new ArrayList<T>();
+    for (List<T> list : slots.values()) {
+    	if (list != null) {
+    		tupleList.addAll(list);
+    	}
+    }
     int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
     lastModifiedTracker.markAsModified();
     if (actualWindowLengthInSeconds != windowLengthInSeconds) {
       LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
     }
-    emit(counts, actualWindowLengthInSeconds);
+    emit(tupleList, actualWindowLengthInSeconds);
   }
 
-  private void emit(Map<Object, Long> counts, int actualWindowLengthInSeconds) {
-    for (Entry<Object, Long> entry : counts.entrySet()) {
-      Object obj = entry.getKey();
-      Long count = entry.getValue();
-      collector.emit(new Values(obj, count, actualWindowLengthInSeconds));
-    }
+  private void emit(List<T> tupleList, int actualWindowLengthInSeconds) {
+      collector.emit(new Values(tupleList, actualWindowLengthInSeconds));
   }
 
-  private void countObjAndAck(Tuple tuple) {
-    Object obj = tuple.getValue(0);
-    counter.incrementCount(obj);
-    collector.ack(tuple);
+//  private void countObjAndAck(Tuple tuple) {
+//    Object obj = tuple.getValue(0);
+//    counter.incrementCount(obj);
+//    collector.ack(tuple);
+//  }
+  
+  private void ackObject(Tuple tuple) {
+	    T obj = (T) tuple.getValue(0);
+	    //counter.incrementCount(obj);
+	    window.addTuple(obj);
+	    collector.ack(tuple);
   }
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("obj", "count", "actualWindowLengthInSeconds"));
+    declarer.declare(new Fields("graphList", "actualWindowLengthInSeconds"));
   }
 
   @Override

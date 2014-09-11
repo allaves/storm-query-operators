@@ -8,6 +8,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.utils.RotatingMap;
 import backtype.storm.utils.TimeCacheMap;
 
 import java.util.*;
@@ -16,15 +17,16 @@ import java.util.*;
  * Source: storm-starter project
  * https://github.com/nathanmarz/storm-starter/blob/master/src/jvm/storm/starter/bolt/SingleJoinBolt.java
  */
-public class SingleJoinBolt extends BaseRichBolt {
+public class SimpleJoinBolt extends BaseRichBolt {
   OutputCollector _collector;
   Fields _idFields;
   Fields _outFields;
   int _numSources;
-  TimeCacheMap<List<Object>, Map<GlobalStreamId, Tuple>> _pending;
+  //TimeCacheMap<List<Object>, Map<GlobalStreamId, Tuple>> _pending;
+  RotatingMap<List<Object>, Map<GlobalStreamId, Tuple>> _pending;
   Map<String, GlobalStreamId> _fieldLocations;
 
-  public SingleJoinBolt(Fields outFields) {
+  public SimpleJoinBolt(Fields outFields) {
     _outFields = outFields;
   }
 
@@ -33,7 +35,8 @@ public class SingleJoinBolt extends BaseRichBolt {
     _fieldLocations = new HashMap<String, GlobalStreamId>();
     _collector = collector;
     int timeout = ((Number) conf.get(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS)).intValue();
-    _pending = new TimeCacheMap<List<Object>, Map<GlobalStreamId, Tuple>>(timeout, new ExpireCallback());
+    //_pending = new TimeCacheMap<List<Object>, Map<GlobalStreamId, Tuple>>(timeout, new ExpireCallback());
+    _pending = new RotatingMap<List<Object>, Map<GlobalStreamId, Tuple>>(timeout);
     _numSources = context.getThisSources().size();
     Set<String> idFields = null;
     for (GlobalStreamId source : context.getThisSources().keySet()) {
@@ -90,12 +93,12 @@ public class SingleJoinBolt extends BaseRichBolt {
     declarer.declare(_outFields);
   }
 
-  private class ExpireCallback implements TimeCacheMap.ExpiredCallback<List<Object>, Map<GlobalStreamId, Tuple>> {
-    @Override
-    public void expire(List<Object> id, Map<GlobalStreamId, Tuple> tuples) {
-      for (Tuple tuple : tuples.values()) {
-        _collector.fail(tuple);
-      }
-    }
-  }
+//  private class ExpireCallback implements TimeCacheMap.ExpiredCallback<List<Object>, Map<GlobalStreamId, Tuple>> {
+//    @Override
+//    public void expire(List<Object> id, Map<GlobalStreamId, Tuple> tuples) {
+//      for (Tuple tuple : tuples.values()) {
+//        _collector.fail(tuple);
+//      }
+//    }
+//  }
 }

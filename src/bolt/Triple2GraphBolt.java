@@ -48,8 +48,8 @@ public class Triple2GraphBolt extends BaseRichBolt {
 		if (statementPattern.test(newStatement)) {
 			if (!graph.isEmpty()) {
 				// The values emitted correspond to the name of the graph (earthquake URI), the timestamp of creation, and the graph.
-				System.out.println("GRAPH BEFORE BEING EMITTED:");
-				RDFDataMgr.write(System.out, graph, Lang.N3);
+				System.out.println("EMITTED GRAPH: " + graphName);
+//				RDFDataMgr.write(System.out, graph, Lang.N3);
 				collector.emit(new Values(graphName, System.currentTimeMillis(), graph));
 				graph.clear();
 			}

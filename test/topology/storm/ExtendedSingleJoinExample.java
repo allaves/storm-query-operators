@@ -1,4 +1,4 @@
-package topology;
+package topology.storm;
 
 import java.sql.Date;
 import java.text.DateFormat;

@@ -1,4 +1,4 @@
-package topology;
+package topology.trident;
 
 import storm.trident.Stream;
 import storm.trident.TridentTopology;
