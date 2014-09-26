@@ -8,18 +8,11 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
-public class RDFSimpleJoin extends BaseRichBolt {
-
-	private static final long serialVersionUID = -6606787987861179871L;
-	
-	private String joinAttribute;
-	
-	public RDFSimpleJoin(String joinAttribute) {
-		this.joinAttribute = joinAttribute;
-	}
+public class ProjectionBolt extends BaseRichBolt {
 
 	@Override
-	public void prepare(Map stormConf, TopologyContext context,	OutputCollector collector) {
+	public void prepare(Map stormConf, TopologyContext context,
+			OutputCollector collector) {
 		// TODO Auto-generated method stub
 
 	}
@@ -32,7 +25,8 @@ public class RDFSimpleJoin extends BaseRichBolt {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		
+		// TODO Auto-generated method stub
+
 	}
 
 }
