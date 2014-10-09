@@ -45,9 +45,6 @@ public class RDFSimpleJoinBolt extends BaseRichBolt {
 		// Create a BGP from the query pattern
 		// Having a triple <s, p, o> in the WHERE clause...
 		Triple triple = Triple.create(Var.alloc("s"), Var.alloc("p"), Var.alloc("o"));
-		BasicPattern pattern = new BasicPattern();
-		pattern.add(triple);
-		Op op = new OpBGP(pattern);
 		//...
 	}
 
@@ -66,15 +63,16 @@ public class RDFSimpleJoinBolt extends BaseRichBolt {
 	}
 
 	/*
-	 * Nested loop join
+	 * TODO: Nested loop join
 	 */
 	private List<Graph> joinLeftRight() {
 		List<Graph> results = new ArrayList<Graph>();
 		for (Graph l : left) {
 			for (Graph r : right) {
-				if (l.)
+				//if ()
 			}
 		}
+		return results;
 	}
 
 	@Override
