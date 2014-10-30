@@ -105,10 +105,11 @@ public class RollingWindowBolt<T> extends BaseRichBolt {
 //  }
   
   private void ackObject(Tuple tuple) {
-	    T obj = (T) tuple.getValue(0);
-	    //counter.incrementCount(obj);
-	    window.addTuple(obj);
-	    collector.ack(tuple);
+	  String graphName = (String) tuple.getValue(0); 
+	  T obj = (T) tuple.getValue(2);
+	  //counter.incrementCount(obj);
+	  window.addTuple(obj);
+	  collector.ack(tuple);
   }
 
   @Override

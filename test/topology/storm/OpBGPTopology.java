@@ -3,6 +3,7 @@ package topology.storm;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.sparql.core.Var;
@@ -30,7 +31,8 @@ public class OpBGPTopology {
 	private Config topologyConfig;
 	private int runtimeInSeconds;
 	//private List<Triple> triplesPattern;
-	private List<String> triplesPattern;
+	private ArrayList<String> triplesPattern;
+	//private String triplesPattern;
 	
 	public OpBGPTopology() {
 		builder = new TopologyBuilder();
@@ -39,9 +41,10 @@ public class OpBGPTopology {
 		runtimeInSeconds = 15;
 		//triplesPattern = new ArrayList<Triple>();
 		triplesPattern = new ArrayList<String>();
-		// Testing 
-		//triplesPattern.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("rdf:type").asNode(), Var.alloc("ssn:Observation")));
-		triplesPattern.add("obs rdf:type ssn:Observation");
+		// Testing
+		triplesPattern.add("?obs http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://purl.oclc.org/NET/ssnx/ssn#Observation");
+		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationResult ?sensorOutput");
+		
 //				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observationResult").asNode(), Var.alloc("sensorOutput")));
 //				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observationSamplingTime").asNode(), Var.alloc("timestamp")));
 //				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observedBy").asNode(), Var.alloc("sensor")));
@@ -64,9 +67,10 @@ public class OpBGPTopology {
 		//builder.setSpout("rdfSpout2", new RDFStreamSpout(fileName));
 		builder.setBolt("triple2graph1", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout1");
 		//builder.setBolt("triple2graph2", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout2");
-		builder.setBolt("graphCounter1", new RollingWindowBolt<String>(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
+		builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
 		//builder.setBolt("graphCounter2", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph2", new Fields("name"));
-		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs"), triplesPattern)).shuffleGrouping("graphCounter1");
+		//builder.setBolt("bgpBolt", new OpBGPBolt("obs", triplesPattern)).shuffleGrouping("graphCounter1");
+		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs"), triplesPattern), 1).globalGrouping("graphCounter1");
 		//builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("graphCounter1").globalGrouping("graphCounter2");
 		builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("bgpBolt");
 	}

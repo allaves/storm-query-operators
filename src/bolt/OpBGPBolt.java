@@ -33,21 +33,20 @@ import backtype.storm.tuple.Values;
 
 public class OpBGPBolt extends BaseRichBolt {
 	
+	//private Fields outputFields;
 	private Fields outputFields;
 	private List<Triple> triplesPattern;
 	private OutputCollector collector;
+	private ArrayList<String> stringPattern;
+	private BasicPattern pattern;
 	private Op opBGP;
 	
+	
 	//public OpBGPBolt(Fields outputFields, List<Triple> triplesPattern) {
-	public OpBGPBolt(Fields outputFields, List<String> stringPattern) {
+	public OpBGPBolt(Fields outputFields, ArrayList<String> stringPattern) {
+	//public OpBGPBolt(String stringPattern) {
 		this.outputFields = outputFields;
-		this.triplesPattern = new ArrayList<Triple>();
-		for (String str : stringPattern) {
-			String[] triple = str.split(" ");
-			triplesPattern.add(Triple.create(Var.alloc(triple[0]), ResourceFactory.createProperty(triple[1]).asNode(), Var.alloc(triple[2])));
-		}
-		BasicPattern pattern = BasicPattern.wrap(triplesPattern);
-		this.opBGP = new OpBGP(pattern);
+		this.stringPattern = stringPattern;
 //		Query q = OpAsQuery.asQuery(op);
 //		q.setQuerySelectType();
 //		OpExecutor executor = new OpExecutor(new ExecutionContext());
@@ -57,6 +56,37 @@ public class OpBGPBolt extends BaseRichBolt {
 	@Override
 	public void prepare(Map stormConf, TopologyContext context,	OutputCollector collector) {
 		this.collector = collector;
+		this.triplesPattern = new ArrayList<Triple>();
+		for (String str : this.stringPattern) {
+			String[] triple = str.split(" ");
+			Node s = null;
+			Node p = null;
+			Node o = null;
+			// Subject definition
+			if (triple[0].startsWith("?")) {
+				s = Var.alloc(triple[0].substring(1));
+			}
+			else {
+				s = ResourceFactory.createResource(triple[0]).asNode();
+			}
+			// Property definition
+			if (triple[1].startsWith("?")) {
+				p = Var.alloc(triple[1].substring(1));
+			}
+			else {
+				p = ResourceFactory.createProperty(triple[1]).asNode();
+			}
+			// Object definition
+			if (triple[2].startsWith("?")) {
+				o = Var.alloc(triple[2].substring(1));
+			}
+			else {
+				o = ResourceFactory.createResource(triple[2]).asNode();
+			}
+			triplesPattern.add(Triple.create(s, p, o));
+		}
+		this.pattern = BasicPattern.wrap(triplesPattern);
+		this.opBGP = new OpBGP(pattern);
 	}
 
 	@Override
@@ -66,7 +96,8 @@ public class OpBGPBolt extends BaseRichBolt {
 	 * We assume that each tuple here is a set of graphs, result of the windowing bolt.
 	 */
 	public void execute(Tuple input) {
-		List<Graph> graphList = (List<Graph>) input.getValue(0);
+		ArrayList<Graph> graphList = (ArrayList<Graph>) input.getValue(0);
+		//Graph graph = (Graph) input.getValue(0);
 		QueryIterator queryIter = null;
 		for (Graph g : graphList) {
 			queryIter = Algebra.exec(this.opBGP, g); 
@@ -83,8 +114,13 @@ public class OpBGPBolt extends BaseRichBolt {
 			
 
 	@Override
+	/*
+	 * Test
+	 * (non-Javadoc)
+	 * @see backtype.storm.topology.IComponent#declareOutputFields(backtype.storm.topology.OutputFieldsDeclarer)
+	 */
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(this.outputFields);
+		declarer.declare(new Fields("obs"));
 	}
 
 }
