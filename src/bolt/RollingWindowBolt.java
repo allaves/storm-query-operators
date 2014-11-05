@@ -68,7 +68,11 @@ public class RollingWindowBolt<T> extends BaseRichBolt {
   @Override
   public void execute(Tuple tuple) {
     if (TupleHelpers.isTickTuple(tuple)) {
-      LOG.debug("Received tick tuple, triggering emit of current window counts");
+    	
+    	
+      System.out.println("Received tick tuple, triggering emit of current window counts");
+      
+      
       //emitCurrentWindowCounts();
       emitCurrentWindowSlot();
     }

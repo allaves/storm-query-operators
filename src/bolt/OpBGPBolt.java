@@ -38,13 +38,14 @@ public class OpBGPBolt extends BaseRichBolt {
 	private List<Triple> triplesPattern;
 	private OutputCollector collector;
 	private ArrayList<String> stringPattern;
+	//private String stringPattern;
 	private BasicPattern pattern;
 	private Op opBGP;
 	
 	
 	//public OpBGPBolt(Fields outputFields, List<Triple> triplesPattern) {
 	public OpBGPBolt(Fields outputFields, ArrayList<String> stringPattern) {
-	//public OpBGPBolt(String stringPattern) {
+	//public OpBGPBolt(Fields outputFields, String stringPattern) {
 		this.outputFields = outputFields;
 		this.stringPattern = stringPattern;
 //		Query q = OpAsQuery.asQuery(op);
@@ -103,10 +104,24 @@ public class OpBGPBolt extends BaseRichBolt {
 			queryIter = Algebra.exec(this.opBGP, g); 
 			while (queryIter.hasNext()) {
 				Binding binding = queryIter.nextBinding();
-				Var var = Var.alloc("obs");
-				Node node = binding.get(var);
-				System.out.println(var + " = " + FmtUtils.stringForNode(node));
-				collector.emit(new Values(node));
+				Values values = new Values();
+				for (String str : this.outputFields) {
+					Var aux = Var.alloc(str);
+//					Var obsValue = Var.alloc("obsValue");
+//					Var time = Var.alloc("time");
+//					Var location = Var.alloc("location");
+					Node auxNode = binding.get(aux);
+//					Node obsValueNode = binding.get(obsValue);
+//					Node timeNode = binding.get(time);
+//					Node locationNode = binding.get(location);
+	//				System.out.println(obsId + ": " + FmtUtils.stringForNode(obsIdNode) + ", " + 
+	//						obsValue + ": " + FmtUtils.stringForNode(obsValueNode) + ", " + time + ": " + FmtUtils.stringForNode(timeNode)
+	//						+ ", " + location + ": " + FmtUtils.stringForNode(locationNode));
+					values.add(FmtUtils.stringForNode(auxNode));
+				}	
+				collector.emit(values);
+//				collector.emit(new Values(FmtUtils.stringForNode(obsIdNode), FmtUtils.stringForNode(obsValueNode), 
+//							FmtUtils.stringForNode(timeNode), FmtUtils.stringForNode(locationNode)));
 			}
 		}
 		collector.ack(input);
@@ -120,7 +135,7 @@ public class OpBGPBolt extends BaseRichBolt {
 	 * @see backtype.storm.topology.IComponent#declareOutputFields(backtype.storm.topology.OutputFieldsDeclarer)
 	 */
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("obs"));
+		declarer.declare(this.outputFields);
 	}
 
 }

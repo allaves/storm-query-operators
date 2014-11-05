@@ -30,29 +30,24 @@ public class OpBGPTopology {
 	private String topologyName;
 	private Config topologyConfig;
 	private int runtimeInSeconds;
-	//private List<Triple> triplesPattern;
 	private ArrayList<String> triplesPattern;
-	//private String triplesPattern;
 	
 	public OpBGPTopology() {
 		builder = new TopologyBuilder();
 		topologyName = "graphCounterTopology";
 		topologyConfig = createTopologyConfiguration();
-		runtimeInSeconds = 15;
-		//triplesPattern = new ArrayList<Triple>();
+		runtimeInSeconds = 60;
 		triplesPattern = new ArrayList<String>();
 		// Testing
 		triplesPattern.add("?obs http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://purl.oclc.org/NET/ssnx/ssn#Observation");
 		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationResult ?sensorOutput");
-		
-//				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observationResult").asNode(), Var.alloc("sensorOutput")));
-//				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observationSamplingTime").asNode(), Var.alloc("timestamp")));
-//				triplesList.add(Triple.create(Var.alloc("obs"), ResourceFactory.createProperty("ssn:observedBy").asNode(), Var.alloc("sensor")));
-//				triplesList.add(Triple.create(Var.alloc("sensorOutput"), ResourceFactory.createProperty("ssn:hasValue").asNode(), Var.alloc("value")));
-//				triplesList.add(Triple.create(Var.alloc("obsValue"), ResourceFactory.createProperty("dul:hasDataValue").asNode(), Var.alloc("sensor")));
-//				triplesList.add(Triple.create(Var.alloc("timestamp"), ResourceFactory.createProperty("time:inXSDDateTime").asNode(), Var.alloc("time")));
-//				triplesList.add(Triple.create(Var.alloc("sensor"), ResourceFactory.createProperty("geo:hasGeometry").asNode(), Var.alloc("geometry")));
-//				triplesList.add(Triple.create(Var.alloc("geometry"), ResourceFactory.createProperty("geo:asWKT").asNode(), Var.alloc("location")));
+		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationSamplingTime ?timestamp");
+		//triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observedBy ?sensor");
+		triplesPattern.add("?sensorOutput http://purl.oclc.org/NET/ssnx/ssn#hasValue ?value");
+		triplesPattern.add("?value http://www.loa-cnr.it/ontologies/DUL.owl#hasDataValue ?obsValue");
+		triplesPattern.add("?timestamp http://www.w3.org/2006/time#inXSDDateTime ?time");
+		triplesPattern.add("?sensor http://www.opengis.net/ont/geosparql#hasGeometry ?geometry");
+		triplesPattern.add("?geometry http://www.opengis.net/ont/geosparql#asWKT ?location");
 					
 		wireTopology();
 	}
@@ -65,13 +60,17 @@ public class OpBGPTopology {
 		
 		builder.setSpout("rdfSpout1", new RDFStreamSpout(fileName));
 		//builder.setSpout("rdfSpout2", new RDFStreamSpout(fileName));
-		builder.setBolt("triple2graph1", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout1");
+		builder.setBolt("triple2graph1", new Triple2GraphBolt(STARTING_PATTERN_ID)).globalGrouping("rdfSpout1");
 		//builder.setBolt("triple2graph2", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout2");
-		builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
+		//builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
+		
+		builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(20, 5)).globalGrouping("triple2graph1");
 		//builder.setBolt("graphCounter2", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph2", new Fields("name"));
 		//builder.setBolt("bgpBolt", new OpBGPBolt("obs", triplesPattern)).shuffleGrouping("graphCounter1");
-		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs"), triplesPattern), 1).globalGrouping("graphCounter1");
+		
+		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs", "value", "timestamp", "geometry"), triplesPattern)).globalGrouping("graphCounter1");
 		//builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("graphCounter1").globalGrouping("graphCounter2");
+		
 		builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("bgpBolt");
 	}
 
