@@ -36,18 +36,18 @@ public class OpBGPTopology {
 		builder = new TopologyBuilder();
 		topologyName = "graphCounterTopology";
 		topologyConfig = createTopologyConfiguration();
-		runtimeInSeconds = 60;
+		runtimeInSeconds = 120;
 		triplesPattern = new ArrayList<String>();
 		// Testing
 		triplesPattern.add("?obs http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://purl.oclc.org/NET/ssnx/ssn#Observation");
-		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationResult ?sensorOutput");
-		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationSamplingTime ?timestamp");
-		//triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observedBy ?sensor");
-		triplesPattern.add("?sensorOutput http://purl.oclc.org/NET/ssnx/ssn#hasValue ?value");
-		triplesPattern.add("?value http://www.loa-cnr.it/ontologies/DUL.owl#hasDataValue ?obsValue");
-		triplesPattern.add("?timestamp http://www.w3.org/2006/time#inXSDDateTime ?time");
-		triplesPattern.add("?sensor http://www.opengis.net/ont/geosparql#hasGeometry ?geometry");
-		triplesPattern.add("?geometry http://www.opengis.net/ont/geosparql#asWKT ?location");
+//		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationResult ?sensorOutput");
+//		triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observationSamplingTime ?timestamp");
+//		//triplesPattern.add("?obs http://purl.oclc.org/NET/ssnx/ssn#observedBy ?sensor");
+//		triplesPattern.add("?sensorOutput http://purl.oclc.org/NET/ssnx/ssn#hasValue ?value");
+//		triplesPattern.add("?value http://www.loa-cnr.it/ontologies/DUL.owl#hasDataValue ?obsValue");
+//		triplesPattern.add("?timestamp http://www.w3.org/2006/time#inXSDDateTime ?time");
+//		triplesPattern.add("?sensor http://www.opengis.net/ont/geosparql#hasGeometry ?geometry");
+//		triplesPattern.add("?geometry http://www.opengis.net/ont/geosparql#asWKT ?location");
 					
 		wireTopology();
 	}
@@ -64,11 +64,12 @@ public class OpBGPTopology {
 		//builder.setBolt("triple2graph2", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout2");
 		//builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
 		
-		builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(20, 5)).globalGrouping("triple2graph1");
+		builder.setBolt("graphCounter1", new RollingWindowBolt<Graph>(30, 15)).globalGrouping("triple2graph1");
 		//builder.setBolt("graphCounter2", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph2", new Fields("name"));
 		//builder.setBolt("bgpBolt", new OpBGPBolt("obs", triplesPattern)).shuffleGrouping("graphCounter1");
 		
-		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs", "value", "timestamp", "geometry"), triplesPattern)).globalGrouping("graphCounter1");
+		//builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs", "value", "timestamp", "geometry"), triplesPattern)).globalGrouping("graphCounter1");
+		builder.setBolt("bgpBolt", new OpBGPBolt(new Fields("obs"), triplesPattern)).globalGrouping("graphCounter1");
 		//builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("graphCounter1").globalGrouping("graphCounter2");
 		
 		builder.setBolt("acker", new AckerPrinterBolt()).globalGrouping("bgpBolt");

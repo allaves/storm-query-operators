@@ -58,12 +58,12 @@ public class RDFSimpleJoinStormExample {
 		String finalCounter = "finalCounter";
 		
 		builder.setSpout("rdfSpout1", new RDFStreamSpout(fileName));
-		builder.setSpout("rdfSpout2", new RDFStreamSpout(fileName));
-		builder.setBolt("triple2graph1", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout1");
-		builder.setBolt("triple2graph2", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout2");
-		builder.setBolt("graphCounter1", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph1", new Fields("name"));
-		builder.setBolt("graphCounter2", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph2", new Fields("name"));
-		builder.setBolt(finalCounter, new AckerPrinterBolt()).globalGrouping("graphCounter1").globalGrouping("graphCounter2");
+		//builder.setSpout("rdfSpout2", new RDFStreamSpout(fileName));
+		builder.setBolt("triple2graph1", new Triple2GraphBolt(STARTING_PATTERN_ID), 1).shuffleGrouping("rdfSpout1");
+		//builder.setBolt("triple2graph2", new Triple2GraphBolt(STARTING_PATTERN_ID)).shuffleGrouping("rdfSpout2");
+		builder.setBolt("graphCounter1", new RollingWindowBolt(15, 3), 1).shuffleGrouping("triple2graph1");
+		//builder.setBolt("graphCounter2", new RollingCountBolt(15, 3)).fieldsGrouping("triple2graph2", new Fields("name"));
+		builder.setBolt(finalCounter, new AckerPrinterBolt()).globalGrouping("graphCounter1");
 	}
 
 	private Config createTopologyConfiguration() {

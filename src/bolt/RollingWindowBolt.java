@@ -88,6 +88,7 @@ public class RollingWindowBolt<T> extends BaseRichBolt {
     for (List<T> list : slots.values()) {
     	if (list != null) {
     		tupleList.addAll(list);
+    		System.out.printf("ADD ALL (list -> tupleList): " + tupleList + " -> "+ list);
     	}
     }
     int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
@@ -100,6 +101,7 @@ public class RollingWindowBolt<T> extends BaseRichBolt {
 
   private void emit(List<T> tupleList, int actualWindowLengthInSeconds) {
       collector.emit(new Values(tupleList, actualWindowLengthInSeconds));
+      System.out.println("Emitted WINDOW SLOT!");
   }
 
 //  private void countObjAndAck(Tuple tuple) {
@@ -118,7 +120,7 @@ public class RollingWindowBolt<T> extends BaseRichBolt {
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("graphList", "actualWindowLengthInSeconds"));
+	  declarer.declare(new Fields("graphList", "actualWindowLengthInSeconds"));
   }
 
   @Override

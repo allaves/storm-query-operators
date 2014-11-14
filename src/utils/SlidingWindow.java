@@ -19,10 +19,10 @@ public class SlidingWindow<T> implements Serializable {
 	private int windowLengthInSlots;
 	
 	public SlidingWindow(int windowLengthInSlots) {
-	    if (windowLengthInSlots < 2) {
-	      throw new IllegalArgumentException(
-	          "Window length in slots must be at least two (you requested " + windowLengthInSlots + ")");
-	    }
+//	    if (windowLengthInSlots < 2) {
+//	      throw new IllegalArgumentException(
+//	          "Window length in slots must be at least two (you requested " + windowLengthInSlots + ")");
+//	    }
 	    this.windowLengthInSlots = windowLengthInSlots;
 	    //this.objCounter = new SlotBasedCounter<T>(this.windowLengthInSlots);
 	    this.store = new SlotBasedStore<T>(this.windowLengthInSlots);
